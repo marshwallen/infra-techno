@@ -2,10 +2,10 @@
 
 ---
 
-### **1 EPLB核心功能**
+### 🥭 EPLB核心功能
 EPLB是DeepSeek团队针对混合专家模型（MoE）开发的负载均衡算法，全称为 Expert Parallelism Load Balancer，旨在解决多GPU环境下专家负载不均问题。其核心目标是通过动态调整专家分布，最大化GPU利用率并减少跨节点通信开销。
 
-### **2 技术原理**
+### 🥭 技术原理
 1. **冗余专家策略**  
    - 对高负载专家进行复制，分散计算压力。例如，若某专家处理任务量过大，EPLB会创建其副本，并将副本分配到空闲GPU上。
    - 结合DeepSeek-V3的**Group-Limited Expert Routing**（组限制专家路由）技术，优先将同一组的专家部署在同一物理节点，减少跨节点数据传输。
@@ -21,12 +21,29 @@ EPLB是DeepSeek团队针对混合专家模型（MoE）开发的负载均衡算�
    - **适用场景**：专家组分布复杂或大规模并行时（如解码阶段）。
    - **策略**：忽略专家组限制，全局复制专家并动态分配至GPU，适应动态负载变化。
 
-### **3 应用场景**
+```markdown
+🟠 Related Knowledge
+
+- 专家混合架构（MoE）
+    - 专家层（MoE层）
+        1. ​MoE层替代传统FFN: DeepSeek-R1 的 MoE 架构以 Transformer 块为基础，将传统的前馈神经网络（FFN）替换为 MoE 层，每隔一层 Transformer 块进行一次替换
+        2. 每个 MoE 层包含多个独立的 FFN 子网络（即“专家”），通过门控网络（Gating Network）动态选择当前输入应激活的专家（通常选择 top-2 或 top-4 专家）
+        3. 门控基于输入标记的上下文计算与专家质心的相似度，通过 softmax 归一化后筛选出最相关的专家
+    - 稀疏激活与计算优化
+        - MoE 架构通过稀疏激活（每次仅激活约 1/7 的总参数）显著降低计算开销
+    - 训练优化
+        1. DeepSeek-R1 在训练中引入强化学习（GRPO 算法），优化专家选择策略
+        2. GRPO 通过对比同一问题生成的多个答案组，计算优势得分（Advantage Score）以调整路由策略，无需依赖独立的奖励模型
+        3. 强化学习（GRPO 算法）优化数学推理、代码生成等任务
+        4. 其他基础技术和全场景微调
+```
+
+### 🥭 应用场景
 - **预填充阶段（Prefilling）**：采用分层策略优化小规模并行，例如处理4K序列长度的输入时，通过微批次重叠计算与通信。
 - **解码阶段（Decoding）**：切换至全局策略，支持大规模并行（如EP128配置），减少GPU闲置时间。
 - **跨节点优化**：通过组限制路由减少节点间通信数据量，提升分布式训练效率。
 
-### **4 性能优势**
+### 🥭 性能优势
 - **训练效率提升**：在DeepSeek-V3技术报告中，EPLB显著减少GPU闲置时间，推理阶段通信数据量降低30%。
 - **资源利用率优化**：通过动态负载均衡，GPU利用率接近100%，适用于千亿参数规模的MoE模型。
 
@@ -36,7 +53,7 @@ EPLB是DeepSeek团队针对混合专家模型（MoE）开发的负载均衡算�
 - **源代码仓库**: https://github.com/deepseek-ai/eplb
 - **核心 Code**: `deepseek-openinfra/docs_offcial/code/EPLB.py`
 
-### 1. `balanced_packing` 负载均衡分组函数
+### 🥭 `balanced_packing` 负载均衡分组函数
 ```python
 def balanced_packing(weight: torch.Tensor, num_packs: int) -> Tuple[torch.Tensor, torch.Tensor]:
     """
@@ -73,7 +90,7 @@ def balanced_packing(weight: torch.Tensor, num_packs: int) -> Tuple[torch.Tensor
 - 用于分层负载均衡策略中的 **专家组打包到节点**
 - 与 `rebalance_experts_hierarchical` 的分层策略配合，优先保证节点间负载均衡
 
-### 2. `replicate_experts` 专家复制函数
+### 🥭 `replicate_experts` 专家复制函数
 ```python
 def replicate_experts(weight: torch.Tensor, num_phy: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """
@@ -104,7 +121,7 @@ def replicate_experts(weight: torch.Tensor, num_phy: int) -> Tuple[torch.Tensor,
 - 实现 **冗余专家策略** 的核心逻辑
 - 与 `rebalance_experts` 的全局负载均衡策略配合使用
 
-### 3. `rebalance_experts_hierarchical` 分层负载均衡
+### 🥭 `rebalance_experts_hierarchical` 分层负载均衡
 ```python
 def rebalance_experts_hierarchical(...):
     """
@@ -130,7 +147,7 @@ def rebalance_experts_hierarchical(...):
 - 通过三级分配（节点→副本→GPU）实现 **组限制路由优化**
 - 与 `rebalance_experts` 的入口逻辑配合，优先保证节点间负载均衡
 
-### 4. `rebalance_experts` 入口函数
+### 🥭 `rebalance_experts` 入口函数
 ```python
 def rebalance_experts(...) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """
@@ -147,7 +164,7 @@ def rebalance_experts(...) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
 - 分层策略优先保证 **节点内专家组的本地性**（减少跨节点通信）
 - 全局策略适用于解码阶段等需要大规模并行场景
 
-### 二、关键技术关联
+### 🫒 关键技术关联
 1. **混合专家模型 (MoE)**  
    代码服务于 MoE 模型的专家并行策略，每个专家是独立的子网络，通过门控机制动态激活。
 
@@ -161,7 +178,7 @@ def rebalance_experts(...) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
 4. **动态负载预测**  
    代码中 `weight` 参数需通过历史数据预测（如移动平均法），需结合业务场景实现。
 
-### 三、典型调用示例
+### 🫒 典型调用示例
 ```python
 # 输入：2层 MoE 模型，每层12个专家
 weight = torch.tensor([[90, 132, ...], [20, 107, ...]]) 

@@ -1,4 +1,4 @@
-## DeepGEMM 文字解读
+## 🧆 DeepGEMM 文字解读
 
 ---
 
@@ -58,7 +58,7 @@ DeepGEMM 是专为 ​NVIDIA Hopper 架构 GPU​ 优化的矩阵计算库，支
 
 ---
 
-## DeepGEMM 代码解读
+## 🦐 DeepGEMM 代码解读
 - **源代码仓库**: https://github.com/deepseek-ai/DeepGEMM
 - **核心 Code**: `deepseek-openinfra/docs_offcial/code/fp8_gemm.cuh`
 
